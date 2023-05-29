@@ -29,7 +29,7 @@ Resources:
     Properties:
       CloudFrontOriginAccessIdentityConfig:
         Comment: 'OAI for accessing the S3 static website bucket'
-f
+
   S3Bucket:
     Type: 'AWS::S3::Bucket'
     Properties:
