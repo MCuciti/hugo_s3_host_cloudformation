@@ -29,7 +29,7 @@ Resources:
     Properties:
       CloudFrontOriginAccessIdentityConfig:
         Comment: 'OAI for accessing the S3 static website bucket'
-
+f
   S3Bucket:
     Type: 'AWS::S3::Bucket'
     Properties:
@@ -64,6 +64,30 @@ Resources:
             Resource: !Sub 'arn:aws:s3:::${S3Bucket}/*'
             Principal:
               CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+  IndexFileCloudFrontFunction:
+    Type: AWS::CloudFront::Function
+    Properties: 
+      Name: IndexFileCloudFrontFunction
+      AutoPublish: true
+      FunctionCode: |
+        function handler(event) {
+          var request = event.request;
+          var uri = request.uri;
+          
+          // Check whether the URI is missing a file name.
+          if (uri.endsWith('/')) {
+              request.uri += 'index.html';
+          } 
+          // Check whether the URI is missing a file extension.
+          else if (!uri.includes('.')) {
+              request.uri += '/index.html';
+          }
+          return request;
+        }   
+      FunctionConfig: 
+        Comment: 'This is for the index.html file auto handling thing'
+        Runtime: cloudfront-js-1.0
 
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
@@ -103,30 +127,6 @@ Resources:
           SslSupportMethod: sni-only
           MinimumProtocolVersion: TLSv1.2_2021
         PriceClass: PriceClass_100
-
-  IndexFileCloudFrontFunction:
-    Type: AWS::CloudFront::Function
-    Properties: 
-      Name: IndexFileCloudFrontFunction
-      AutoPublish: true
-      FunctionCode: |
-        function handler(event) {
-          var request = event.request;
-          var uri = request.uri;
-          
-          // Check whether the URI is missing a file name.
-          if (uri.endsWith('/')) {
-              request.uri += 'index.html';
-          } 
-          // Check whether the URI is missing a file extension.
-          else if (!uri.includes('.')) {
-              request.uri += '/index.html';
-          }
-          return request;
-        }   
-      FunctionConfig: 
-        Comment: 'This is for the index.html file auto handling thing'
-        Runtime: cloudfront-js-1.0
 
   Route53RecordSet:
     Type: 'AWS::Route53::RecordSet'
@@ -192,10 +192,4 @@ Resources:
       Type: String
       Value: !Ref S3Bucket
 
-  ManagementIamRoleParameter:
-    Type: 'AWS::SSM::Parameter'
-    Properties:
-      Name: !Sub '/${CustomDomain}/mgmt_role'
-      Type: String
-      Value: !Ref IAMRole
   
